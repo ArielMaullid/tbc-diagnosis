@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hasil Prediksi TBC — Dashboard Ekspertis</title>
+
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/lungs.png') }}"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+
+    <style>
+      :root {
+        --bright-blue: #0066ff;
+        --bright-blue-dark: #004ecc;
+        --electric-gradient: linear-gradient(
+          135deg,
+          #0052d4 0%,
+          #4364f7 50%,
+          #6fb1fc 100%
+        );
+        --bg-light: #f3f7fa;
+        --text-dark: #0f172a;
+        --border-color: #cbd5e1;
+      }
+
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+      }
+
+      .navbar {
+        background: var(--electric-gradient);
+      }
+
+      .main-card {
+        border: 1px solid var(--border-color);
+        border-radius: 24px !important;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .card-header-gradient {
+        background: var(--electric-gradient);
+        padding: 2rem 1.5rem;
+        border-bottom: none;
+      }
+
+      .result-badge {
+        font-size: 1.25rem;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .custom-progress {
+        background-color: #e2e8f0;
+        border-radius: 12px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      .progress-bar {
+        font-weight: 800;
+        font-size: 0.95rem;
+        letter-spacing: 0.05em;
+      }
+
+      .stat-card {
+        border-radius: 16px;
+        transition: transform 0.2s;
+        background: #ffffff;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn-repredict {
+        background-color: var(--bright-blue);
+        border: none;
+        font-weight: 700;
+        padding: 0.8rem 2rem;
+        border-radius: 12px;
+        transition: all 0.2s;
+      }
+
+      .btn-repredict:hover {
+        background-color: var(--bright-blue-dark);
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+      }
+
+      /* ===== TAMBAHAN: Tombol Download PDF ===== */
+      .btn-download-pdf {
+        background-color: #16a34a;
+        border: none;
+        font-weight: 700;
+        padding: 0.8rem 2rem;
+        border-radius: 12px;
+        transition: all 0.2s;
+        color: #ffffff;
+      }
+
+      .btn-download-pdf:hover {
+        background-color: #15803d;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+        color: #ffffff;
+      }
+
+      .btn-download-pdf:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      /* ===== END TAMBAHAN ===== */
+
+      .footer-custom {
+        background-color: #ffffff;
+        border-top: 1px solid var(--border-color);
+        color: #64748b;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9 col-xl-8">
+          <div class="card shadow-lg main-card">
+            <div class="card-header-gradient text-center text-white">
+              <h3 class="mb-0 fw-bold">
+                <i class="bi bi-clipboard2-pulse me-2"></i>Hasil Analisis
+                Diagnostik
+              </h3>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+              <div class="text-center mb-4">
+                <h5 class="text-muted fw-semibold mb-2">Kesimpulan Sistem</h5>
+                <span class="badge bg-{{ badge }} result-badge">
+                  {{ hasil }}
+                </span>
+              </div>
+
+              <hr class="my-4 border-light" />
+
+              <div class="text-center mb-3">
+                <h5 class="fw-bold mb-1">Probabilitas Tuberculosis (TBC)</h5>
+                <p class="text-muted small">
+                  Nilai keyakinan klasifikasi berdasarkan parameter riwayat
+                  klinis
+                </p>
+              </div>
+
+              <div class="progress custom-progress mb-4" style="height: 35px">
+                <div
+                  class="progress-bar {{ progress_color }} progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  id="tbc-progress-bar"
+                  data-probability="{{ probability|default(0) }}"
+                >
+                  {{ probability }}%
+                </div>
+              </div>
+
+              <div
+                class="alert alert-warning border-0 shadow-sm d-flex gap-3 mb-4"
+                style="background-color: #fffbeb; color: #b45309"
+              >
+                <i class="bi bi-shield-exclamation fs-4"></i>
+                <div>
+                  <strong>Pemberitahuan Penting:</strong> Sistem klasifikasi ini
+                  dirancang secara eksklusif sebagai instrumen deteksi dan
+                  penanganan dini (<em>early screening</em>). Apabila hasil
+                  analisis menunjukkan indikasi atau probabilitas
+                  <strong>Teridentifikasi/Positif TBC</strong>, pasien sangat
+                  direkomendasikan untuk segera melakukan pemeriksaan lanjutan
+                  dan konsultasi klinis terintegrasi di fasilitas pelayanan
+                  kesehatan resmi (Puskesmas/Rumah Sakit) guna penegakan
+                  diagnosis yang valid.
+                </div>
+              </div>
+              <hr class="my-4 border-light" />
+
+              <h5
+                class="fw-bold mb-3 text-dark d-flex align-items-center gap-2"
+              >
+                <i class="bi bi-person-lines-fill text-secondary"></i> Ringkasan
+                Data Pasien
+              </h5>
+              <div class="table-responsive mb-4">
+                <table
+                  class="table table-bordered align-middle"
+                  id="tabel-pasien"
+                >
+                  <tbody>
+                    {% for key, value in data_pasien.items() %}
+                    <tr>
+                      <th
+                        width="40%"
+                        class="bg-light text-secondary fw-bold small"
+                      >
+                        {{ key }}
+                      </th>
+                      <td class="fw-semibold text-dark">{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <h5
+                class="fw-bold mb-3 text-dark d-flex align-items-center gap-2"
+              >
+                <i class="bi bi-bar-chart-line-fill text-secondary"></i> Faktor
+                Paling Berpengaruh
+              </h5>
+              <div class="table-responsive mb-4">
+                <table
+                  class="table table-striped table-hover align-middle"
+                  id="tabel-fitur"
+                >
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Parameter Klinis / Lingkungan</th>
+                      <th>Nilai Bobot Kepentingan (Importance)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for fitur, skor in feature_importance %}
+                    <tr>
+                      <td class="fw-medium text-dark">{{ fitur }}</td>
+                      <td class="font-monospace fw-bold text-primary">
+                        {{ "%.4f"|format(skor) }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div
+                class="alert alert-info d-flex align-items-center gap-3 mt-4 border-0 shadow-sm"
+                style="background-color: #e0f2fe; color: #0369a1"
+              >
+                <i class="bi bi-clock-history fs-4"></i>
+                <div>
+                  <strong>Waktu Eksekusi Prediksi:</strong>
+                  <span class="font-monospace" id="waktu-prediksi"
+                    >{{ waktu_prediksi }}</span
+                  >
+                </div>
+              </div>
+
+              <div
+                class="alert alert-secondary d-flex gap-3 border-0 shadow-sm"
+                style="background-color: #f1f5f9; color: #475569"
+              >
+                <i
+                  class="bi bi-exclamation-triangle-fill fs-4 text-warning"
+                ></i>
+                <div class="small">
+                  <strong>Disclaimer Medis:</strong> Hasil evaluasi komputasi
+                  ini murni berfungsi sebagai instrumen penapisan awal
+                  (*screening support tool*) dan tidak memitigasi keharusan
+                  konfirmasi diagnosis klinis melalui prosedur laboratorium
+                  (BTA/TCM) oleh praktisi medis berwenang.
+                </div>
+              </div>
+
+              <div class="row g-3 mt-4">
+                <div class="col-md-4">
+                  <div
+                    class="card stat-card border-success border-opacity-50 shadow-sm"
+                  >
+                    <div class="card-body text-center py-3">
+                      <h6 class="text-muted small fw-bold mb-1">
+                        Model Accuracy
+                      </h6>
+                      <h3 class="fw-extrabold text-success m-0">89.56%</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div
+                    class="card stat-card border-primary border-opacity-50 shadow-sm"
+                  >
+                    <div class="card-body text-center py-3">
+                      <h6 class="text-muted small fw-bold mb-1">
+                        Model Precision
+                      </h6>
+                      <h3 class="fw-extrabold text-primary m-0">72.00%</h3>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div
+                    class="card stat-card border-warning border-opacity-50 shadow-sm"
+                  >
+                    <div class="card-body text-center py-3">
+                      <h6 class="text-muted small fw-bold mb-1">
+                        Model Recall
+                      </h6>
+                      <h3 class="fw-extrabold text-warning m-0">75.00%</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-grid gap-3 mt-5">
+                <button
+                  id="btn-pdf"
+                  class="btn btn-download-pdf btn-lg shadow-sm"
+                  onclick="downloadPDF()"
+                >
+                  <i class="bi bi-file-earmark-pdf-fill me-2"></i> Unduh Hasil
+                  sebagai PDF
+                </button>
+                <a
+                  href="/"
+                  class="btn btn-primary btn-lg btn-repredict shadow-sm"
+                >
+                  <i class="bi bi-arrow-left-right me-2"></i> Lakukan Evaluasi
+                  Ulang Pasien
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer-custom py-4 mt-5">
+      <div class="container text-center">
+        <p class="mb-1 fw-bold text-dark">Skripsi S1-Teknik Informatika</p>
+        <small class="d-block text-muted">
+          Klasifikasi Diagnosis Tuberculosis (TBC) Menggunakan Algoritma XGBoost
+        </small>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const progressBar = document.getElementById("tbc-progress-bar");
+        if (progressBar) {
+          // Mengambil nilai probabilitas aman dari atribut data-probability HTML
+          const probabilityValue = progressBar.getAttribute("data-probability");
+          // Menyuntikkan lebar progress bar secara aman tanpa memicu linter error
+          progressBar.style.width = probabilityValue + "%";
+        }
+      });
+
+      // ===== TAMBAHAN: Fungsi Download PDF =====
+      function downloadPDF() {
+        const btn = document.getElementById("btn-pdf");
+        btn.disabled = true;
+        btn.innerHTML =
+          '<i class="bi bi-hourglass-split me-2"></i> Membuat PDF...';
+
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "mm",
+            format: "a4",
+          });
+
+          const pageW = doc.internal.pageSize.getWidth();
+          const margin = 15;
+          const contentW = pageW - margin * 2;
+
+          // --- HEADER ---
+          doc.setFillColor(0, 82, 212);
+          doc.rect(0, 0, pageW, 32, "F");
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(16);
+          doc.setTextColor(255, 255, 255);
+          doc.text("Sistem Klasifikasi Diagnosis TBC", pageW / 2, 13, {
+            align: "center",
+          });
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.text("Hasil Analisis Diagnostik", pageW / 2, 21, {
+            align: "center",
+          });
+
+          // Tanggal cetak
+          const now = new Date();
+          const tglCetak =
+            now.toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            }) +
+            "  " +
+            now.toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+          doc.setFontSize(8);
+          doc.text("Dicetak: " + tglCetak, pageW - margin, 28, {
+            align: "right",
+          });
+
+          let y = 42;
+
+          // --- KESIMPULAN & PROBABILITAS ---
+          const hasilEl = document.querySelector(".result-badge");
+          const probEl = document.getElementById("tbc-progress-bar");
+          const waktuEl = document.getElementById("waktu-prediksi");
+
+          const hasilTeks = hasilEl ? hasilEl.innerText.trim() : "-";
+          const probVal = probEl
+            ? probEl.getAttribute("data-probability")
+            : "0";
+          const waktuTeks = waktuEl ? waktuEl.innerText.trim() : "-";
+
+          // Warna badge: merah jika TBC Positif, hijau jika Negatif
+          const isPositive =
+            hasilTeks.toUpperCase().includes("POSITIF") ||
+            hasilTeks.toUpperCase().includes("TBC");
+          const badgeColor = isPositive ? [220, 53, 69] : [25, 135, 84];
+
+          doc.setFillColor(...badgeColor);
+          doc.roundedRect(margin, y, contentW, 16, 4, 4, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(13);
+          doc.setTextColor(255, 255, 255);
+          doc.text("Kesimpulan: " + hasilTeks, pageW / 2, y + 10, {
+            align: "center",
+          });
+
+          y += 22;
+
+          // Bar probabilitas
+          doc.setTextColor(30, 30, 30);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text("Probabilitas TBC: " + probVal + "%", margin, y);
+          y += 5;
+
+          // Track bar
+          doc.setFillColor(226, 232, 240);
+          doc.roundedRect(margin, y, contentW, 8, 2, 2, "F");
+
+          // Fill bar
+          const fillW = (parseFloat(probVal) / 100) * contentW;
+          doc.setFillColor(...badgeColor);
+          doc.roundedRect(margin, y, fillW, 8, 2, 2, "F");
+
+          // Teks persen di dalam bar
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(7);
+          doc.setTextColor(255, 255, 255);
+          if (fillW > 12) {
+            doc.text(probVal + "%", margin + fillW / 2, y + 5.5, {
+              align: "center",
+            });
+          }
+
+          y += 16;
+
+          // Waktu eksekusi
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(80, 80, 80);
+          doc.text("Waktu Eksekusi Prediksi: " + waktuTeks, margin, y);
+          y += 10;
+
+          // --- TABEL DATA PASIEN ---
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(15, 23, 42);
+          doc.text("Ringkasan Data Pasien", margin, y);
+          y += 4;
+
+          const rowsPasien = [];
+          document.querySelectorAll("#tabel-pasien tbody tr").forEach((tr) => {
+            const cols = tr.querySelectorAll("th, td");
+            rowsPasien.push([
+              cols[0]?.innerText.trim() || "",
+              cols[1]?.innerText.trim() || "",
+            ]);
+          });
+
+          doc.autoTable({
+            startY: y,
+            head: [["Parameter", "Nilai"]],
+            body: rowsPasien,
+            margin: { left: margin, right: margin },
+            styles: { font: "helvetica", fontSize: 9, cellPadding: 3 },
+            headStyles: {
+              fillColor: [67, 100, 247],
+              textColor: 255,
+              fontStyle: "bold",
+            },
+            alternateRowStyles: { fillColor: [243, 247, 250] },
+            columnStyles: { 0: { fontStyle: "bold", cellWidth: 70 } },
+            tableLineColor: [203, 213, 225],
+            tableLineWidth: 0.3,
+          });
+
+          y = doc.lastAutoTable.finalY + 10;
+
+          // --- TABEL FEATURE IMPORTANCE ---
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(15, 23, 42);
+          doc.text("Faktor Paling Berpengaruh", margin, y);
+          y += 4;
+
+          const rowsFitur = [];
+          document.querySelectorAll("#tabel-fitur tbody tr").forEach((tr) => {
+            const cols = tr.querySelectorAll("td");
+            rowsFitur.push([
+              cols[0]?.innerText.trim() || "",
+              cols[1]?.innerText.trim() || "",
+            ]);
+          });
+
+          doc.autoTable({
+            startY: y,
+            head: [
+              [
+                "Parameter Klinis / Lingkungan",
+                "Bobot Kepentingan (Importance)",
+              ],
+            ],
+            body: rowsFitur,
+            margin: { left: margin, right: margin },
+            styles: { font: "helvetica", fontSize: 9, cellPadding: 3 },
+            headStyles: {
+              fillColor: [15, 23, 42],
+              textColor: 255,
+              fontStyle: "bold",
+            },
+            alternateRowStyles: { fillColor: [243, 247, 250] },
+            columnStyles: { 1: { halign: "center", fontStyle: "bold" } },
+            tableLineColor: [203, 213, 225],
+            tableLineWidth: 0.3,
+          });
+
+          // Nama file PDF
+          const timestamp = now.toISOString().slice(0, 10);
+          doc.save("Hasil_Klasifikasi_TBC_" + timestamp + ".pdf");
+        } catch (err) {
+          console.error("Gagal membuat PDF:", err);
+          alert("Terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML =
+            '<i class="bi bi-file-earmark-pdf-fill me-2"></i> Unduh Hasil sebagai PDF';
+        }
+      }
+      // ===== END TAMBAHAN =====
+    </script>
+  </body>
+</html>

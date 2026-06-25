@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sistem Klasifikasi Diagnosis TBC — Dashboard Ekspertis</title>
+
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='img/lungs.png') }}"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <style>
+      :root {
+        --bright-blue: #1e40af; /* Diubah ke Navy/Slate Blue khas Medis */
+        --bright-blue-dark: #1e3a8a;
+        --electric-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        --accent-cyan: #38bdf8;
+        --bg-light: #f8fafc;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+      }
+
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+      }
+
+      .app-window {
+        background: #ffffff;
+        border-radius: 16px; /* Lebih subtle & profesional */
+        box-shadow:
+          0 10px 25px -5px rgba(0, 0, 0, 0.05),
+          0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        max-height: 90vh; /* Mencegah overflow body */
+      }
+
+      .panel-welcome {
+        background: var(--electric-gradient);
+        color: #ffffff;
+        padding: 3.5rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .panel-workspace {
+        padding: 3.5rem 3rem;
+        background-color: #ffffff;
+        overflow-y: auto; /* Scroll mandiri untuk form */
+        max-height: 90vh;
+      }
+
+      .section-main-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        letter-spacing: -0.02em;
+      }
+
+      .form-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #334155;
+        margin-bottom: 0.4rem;
+      }
+
+      .form-control,
+      .form-select {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        background-color: #f8fafc; /* Lebih soft di mata dokter */
+      }
+
+      .form-control:focus,
+      .form-select:focus {
+        border-color: var(--bright-blue);
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+      }
+
+      .symptom-box {
+        background-color: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+      }
+
+      .segmented-control {
+        background-color: #f1f5f9;
+        padding: 3px;
+        border-radius: 8px;
+        display: flex;
+      }
+
+      .segmented-control .btn-check + .btn {
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        background: transparent;
+        flex: 1;
+      }
+
+      .segmented-control .btn-check:checked + .btn-outline-secondary {
+        background-color: #ffffff;
+        color: #ef4444; /* Warna merah soft untuk penanda eksistensi gejala "Ya" */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Modifikasi warna deteksi: Biru/Abu jika "Tidak", Biru gelap jika "Ya" */
+      .segmented-control .btn-check:checked + .btn-outline-primary {
+        background-color: var(--bright-blue);
+        color: #ffffff;
+      }
+
+      .btn-action {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+
+      .btn-primary.btn-action {
+        background-color: var(--bright-blue);
+        border: none;
+      }
+
+      .btn-primary.btn-action:hover {
+        background-color: var(--bright-blue-dark);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid px-md-5">
+      <div class="row justify-content-center">
+        <div class="col-12 col-xxl-11">
+          <div class="row app-window g-0">
+            <!-- LEFT PANEL -->
+            <div class="col-lg-4 col-xl-3 panel-welcome d-none d-lg-flex">
+              <div>
+                <div class="d-flex align-items-center gap-3 mb-4">
+                  <div
+                    class="bg-white bg-opacity-10 p-2 rounded-3 text-white d-flex align-items-center justify-content-center"
+                    style="
+                      width: 40px;
+                      height: 40px;
+                      backdrop-filter: blur(4px);
+                    "
+                  >
+                    <i
+                      class="bi bi-heart-pulse-fill fs-5"
+                      style="color: var(--accent-cyan)"
+                    ></i>
+                  </div>
+                  <span class="fw-bold small tracking-wider text-white-50"
+                    >CLINICAL DSS</span
+                  >
+                </div>
+              </div>
+
+              <div class="my-auto">
+                <h1
+                  class="fw-bold text-white mb-3"
+                  style="
+                    font-size: 1.8rem;
+                    line-height: 1.3;
+                    letter-spacing: -0.02em;
+                  "
+                >
+                  Sistem Klasifikasi Diagnosis TBC
+                </h1>
+                <p class="text-white-50 lh-base small">
+                  Sistem skrining awal berbasis algoritma XGBoost teroptimasi
+                  dengan presisi tinggi, berfungsi sebagai instrumen pendukung
+                  keputusan klinis (clinical decision support system)
+                </p>
+              </div>
+
+              <div>
+                <!-- Perbaikan Kontras Teks Badge -->
+                <span
+                  class="badge bg-white bg-opacity-10 text-white px-3 py-2 rounded-pill fw-medium border border-white border-opacity-10"
+                  style="font-size: 0.7rem; letter-spacing: 0.05em"
+                >
+                  S1-TEKNIK INFORMATIKA
+                </span>
+              </div>
+            </div>
+
+            <!-- RIGHT PANEL (WORKSPACE) -->
+            <div class="col-lg-8 col-xl-9 panel-workspace">
+              <div class="mb-4">
+                <h3 class="section-main-title mb-1">
+                  Form Input Parameter Klinis
+                </h3>
+                <p class="text-muted small">
+                  Silakan masukkan rekam identifikasi dan konfirmasi manifestasi
+                  objektif pasien di bawah ini.
+                </p>
+              </div>
+              <!-- SYSTEM INFO -->
+<div
+  class="alert border-0 shadow-sm mb-4"
+  style="
+    background:#eff6ff;
+    border-left:4px solid var(--bright-blue)!important;
+  "
+>
+  <div class="d-flex flex-wrap align-items-center gap-4">
+    <div>
+      <i class="bi bi-cpu-fill text-primary me-2"></i>
+      <strong>Model:</strong> XGBoost Optimized
+    </div>
+
+    <div>
+      <i class="bi bi-shield-check text-success me-2"></i>
+      <strong>Status:</strong> Sistem Aktif
+    </div>
+
+    <div>
+      <i class="bi bi-clipboard2-pulse text-danger me-2"></i>
+      <strong>Fungsi:</strong> Skrining Awal TBC
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+
+
+
+              <form action="/predict" method="POST">
+                <!-- SECTION 1 -->
+                <div class="mb-4">
+                  <h6
+                    class="fw-bold text-dark mb-3"
+                    style="
+                      font-size: 0.85rem;
+                      color: var(--bright-blue) !important;
+                    "
+                  >
+                    <i class="bi bi-person-vcard me-2"></i>1. Profil Demografi &
+                    Riwayat Paparan
+                  </h6>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">Usia Pasien (Tahun) *</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        name="usia"
+                        placeholder="Contoh: 34"
+                        min="0"
+                        max="120"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Jenis Kelamin Biologis *</label>
+                      <select class="form-select" name="jenis_kelamin" required>
+                        <option value="" disabled selected hidden>
+                          Pilih gender...
+                        </option>
+                        <option value="0">Laki-laki</option>
+                        <option value="1">Perempuan</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label"
+                        >Kontak Erat Penderita TBC *</label
+                      >
+                      <select
+                        class="form-select"
+                        name="riwayat_kontak"
+                        required
+                      >
+                        <option value="0">Tidak Ada Riwayat</option>
+                        <option value="1">Ya, Ada Riwayat Kontak</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SECTION 2 -->
+                <div class="mb-4">
+                  <h6
+                    class="fw-bold text-dark mb-3"
+                    style="
+                      font-size: 0.85rem;
+                      color: var(--bright-blue) !important;
+                    "
+                  >
+                    <i class="bi bi-house-gear me-2"></i>2. Faktor Risiko
+                    Lingkungan & Perilaku
+                  </h6>
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <label class="form-label">Kebiasaan Merokok *</label>
+                      <select
+                        class="form-select"
+                        name="status_merokok"
+                        required
+                      >
+                        <option value="0">Tidak Merokok</option>
+                        <option value="1">Aktif / Pasif</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Kepadatan Hunian Rumah *</label>
+                      <select
+                        class="form-select"
+                        name="kepadatan_hunian"
+                        required
+                      >
+                        <option value="0">Normal (Memenuhi Syarat)</option>
+                        <option value="1">Padat / Tidak Layak</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label"
+                        >Kondisi Ventilasi Rumah *</label
+                      >
+                      <select
+                        class="form-select"
+                        name="ventilasi_rumah"
+                        required
+                      >
+                        <option value="0">Memenuhi Syarat (Baik)</option>
+                        <option value="1">Buruk / Minim Sirkulasi</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label"
+                        >Konsumsi Alkohol Berkala *</label
+                      >
+                      <select
+                        class="form-select"
+                        name="konsumsi_alkohol"
+                        required
+                      >
+                        <option value="0">Tidak Mengonsumsi</option>
+                        <option value="1">Ya, Konsumsi Rutin</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SECTION 3 -->
+                <div class="mb-4">
+                  <h6
+                    class="fw-bold text-dark mb-3"
+                    style="
+                      font-size: 0.85rem;
+                      color: var(--bright-blue) !important;
+                    "
+                  >
+                    <i class="bi bi-activity me-2"></i>3. Manifestasi Objektif
+                    Gejala Klinis
+                  </h6>
+                  <div class="row g-2">
+                    <!-- Gap diperkecil agar lebih padat -->
+                    {% set gejala = [ ('batuk_2_minggu','Batuk > 2 Minggu'),
+                    ('demam','Demam Berkepanjangan'),
+                    ('keringat_malam','Keringat Malam (Tanpa Aktivitas)'),
+                    ('penurunan_bb','Penurunan BB Drastis'),
+                    ('nafsu_makan','Penurunan Nafsu Makan'),
+                    ('sesak_napas','Sesak Napas (Dispnea)'),
+                    ('nyeri_dada','Nyeri Dada (Thorax Pain)'),
+                    ('batuk_berdarah','Batuk Berdarah (Hemoptisis)') ] %} {% for
+                    value, label in gejala %}
+                    <div class="col-sm-6 col-md-4 col-xl-3">
+                      <div
+                        class="symptom-box h-100 d-flex flex-column justify-content-between shadow-sm"
+                      >
+                        <span
+                          class="form-label d-block text-secondary mb-2 lh-sm"
+                          style="font-size: 0.8rem"
+                          >{{ label }}</span
+                        >
+                        <div class="segmented-control" role="group">
+                          <input
+                            type="radio"
+                            class="btn-check"
+                            name="{{ value }}"
+                            id="{{ value }}_no"
+                            value="0"
+                            checked
+                          />
+                          <label
+                            class="btn btn-sm btn-outline-secondary"
+                            for="{{ value }}_no"
+                            >Tidak</label
+                          >
+
+                          <input
+                            type="radio"
+                            class="btn-check"
+                            name="{{ value }}"
+                            id="{{ value }}_yes"
+                            value="1"
+                          />
+                          <label
+                            class="btn btn-sm btn-outline-primary"
+                            for="{{ value }}_yes"
+                            >Ya</label
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <!-- DISCLAIMER -->
+<div class="alert alert-warning border-0 shadow-sm mb-4">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+  <strong>Disclaimer:</strong>
+  Hasil klasifikasi yang diberikan sistem merupakan alat bantu
+  skrining awal berbasis machine learning dan tidak menggantikan
+  diagnosis dokter, pemeriksaan laboratorium, maupun pemeriksaan
+  radiologi.
+</div>
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex gap-2 pt-3 border-top border-light">
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-action px-4 shadow-sm"
+                  >
+                    <i class="bi bi-shield-pulse me-2"></i> Proses Analisis
+                    Skrining
+                  </button>
+                  <button
+                    type="reset"
+                    class="btn btn-light btn-action text-secondary border px-3"
+                  >
+                    Reset Form
+                  </button>
+                </div>
+              </form>
+              </form>
+
+<hr class="mt-5">
+
+<div class="text-center text-muted small">
+  <div class="fw-semibold">
+    Implementasi Algoritma XGBoost untuk Klasifikasi Diagnosis Tuberculosis
+  </div>
+
+  <div>
+    Skripsi S1-Teknik Informatika
+  </div>
+
+  <div>
+    Universitas Muhammadiyah Sukabumi • 2026
+  </div>
+</div>
+
+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- LOADING SCREEN -->
+<div
+  id="loadingOverlay"
+  style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(255,255,255,.95);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+  "
+>
+  <div
+    class="spinner-border text-primary mb-3"
+    style="width:4rem;height:4rem;"
+  ></div>
+
+  <h5 class="fw-bold">
+    Sedang Menganalisis Data Pasien...
+  </h5>
+
+  <p class="text-muted">
+    Mohon tunggu beberapa saat
+  </p>
+</div>
+
+<script>
+document.querySelector("form").addEventListener("submit", function() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+});
+</script>
+  </body>
+</html>

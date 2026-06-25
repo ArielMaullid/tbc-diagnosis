@@ -1,0 +1,91 @@
+body {
+  background: linear-gradient(135deg, #eef4ff, #f8fbff);
+
+  min-height: 100vh;
+
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Navbar */
+
+.navbar {
+  background: linear-gradient(135deg, #0d6efd, #2563eb) !important;
+}
+
+/* Card utama */
+
+.main-card {
+  border: none;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #0d6efd, #2563eb) !important;
+
+  padding: 20px;
+}
+
+/* Badge hasil */
+
+.result-badge {
+  font-size: 18px;
+  padding: 15px 25px;
+  border-radius: 12px;
+}
+
+/* Progress */
+
+.custom-progress {
+  height: 35px;
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Statistik */
+
+.stat-card {
+  transition: 0.3s;
+  border-radius: 15px;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Alert */
+
+.alert {
+  border-radius: 15px;
+}
+
+/* Button */
+
+.btn-primary {
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+/* Footer */
+
+footer {
+  margin-top: 60px;
+  padding: 25px;
+  background: white;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Shadow lebih halus */
+
+.shadow-lg {
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.12) !important;
+}
